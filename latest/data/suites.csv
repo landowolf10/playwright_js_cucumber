@@ -1,0 +1,5 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","4270","Cart","","2026-03-12","passed","2026-03-12","","","",""
+"","3664","Login attempt","","2026-03-12","passed","2026-03-12","","","",""
+"","3572","Login attempt","","2026-03-12","passed","2026-03-12","","","",""
+"","5220","Login attempt","","2026-03-12","failed","2026-03-12","","","",""
