@@ -1,0 +1,132 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests (parallel)
+        run: npm run testAll:parallel
+        continue-on-error: true
+        id: run_tests
+
+      - name: Install Allure CLI
+        run: npm install -g allure-commandline --save-dev
+
+      - name: Generate Allure Report
+        if: always()
+        run: npm run allure:generate
+
+      - name: Set STATUS variable
+        run: |
+          if [ ${{ steps.run_tests.outcome }} == 'success' ]; then
+            echo "STATUS=success" >> $GITHUB_ENV
+          else
+            echo "STATUS=failure" >> $GITHUB_ENV
+          fi
+
+      - name: Prepare report folders
+        if: always()
+        run: |
+          TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+
+          mkdir -p "reports-history/$TIMESTAMP"
+
+          if [ -d "reports/allure-report" ]; then
+            cp -r reports/allure-report/* "reports-history/$TIMESTAMP/"
+          else
+            echo "No se encontró reports/allure-report"
+          fi
+
+          rm -rf reports-history/latest
+          mkdir -p reports-history/latest
+
+          if [ -d "reports/allure-report" ]; then
+            cp -r reports/allure-report/* reports-history/latest/
+          fi
+
+          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+
+      - name: Generate styled index.html
+        if: always()
+        run: |
+          INDEX_FILE="reports-history/index.html"
+
+          cat > $INDEX_FILE <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <title>Playwright Reports Dashboard</title>
+            <style>
+              body { font-family: Arial, sans-serif; background: #f4f6f8; margin:0; padding:20px; }
+              h1 { text-align:center; margin-bottom:20px; }
+              table { border-collapse: collapse; margin:auto; width:90%; background:white; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+              th, td { padding: 12px 16px; border-bottom:1px solid #ddd; text-align:center; }
+              th { background:#007acc; color:white; }
+              tr:hover { background:#f1f1f1; }
+              a { text-decoration:none; color:#007acc; font-weight:bold; }
+              .latest { background:#e8f4ff; font-weight:bold; }
+              .success { color:green; font-weight:bold; }
+              .failure { color:red; font-weight:bold; }
+            </style>
+          </head>
+          <body>
+            <h1>Playwwright reports history</h1>
+            <table>
+              <thead>
+                <tr>
+                  <th>Run</th>
+                  <th>Status</th>
+                  <th>Report</th>
+                </tr>
+              </thead>
+              <tbody>
+          EOF
+
+          echo "<tr class='latest'><td>Last report</td><td class='$STATUS'>$STATUS</td><td><a href='latest/index.html'>Open report</a></td></tr>" >> $INDEX_FILE
+
+          for d in $(ls -d reports-history/*/ | grep -v 'latest' | sort -r); do
+            NAME=$(basename $d)
+            echo "<tr><td>$NAME</td><td>-</td><td><a href='$NAME/index.html'>Open report</a></td></tr>" >> $INDEX_FILE
+          done
+
+          cat >> $INDEX_FILE <<'EOF'
+              </tbody>
+            </table>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: reports-history
+          publish_branch: gh-pages
+          keep_files: true
+          commit_message: "Update Playwright reports ${{ env.TIMESTAMP }}"
+          
+      - name: Debug structure
+        run: ls -R reports-history
