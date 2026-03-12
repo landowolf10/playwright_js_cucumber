@@ -117,4 +117,4 @@ The `.env` file was added **only for demonstration purposes** in this
 repository.
 
 In real-world projects, **`.env` files should never be committed to the
-repository** and should always be included in `.gitignore`. 
+repository** and should always be included in `.gitignore`.
