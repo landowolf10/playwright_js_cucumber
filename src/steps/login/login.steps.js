@@ -1,44 +1,24 @@
-import { Given, When, Then } from "@cucumber/cucumber";
+import { Given, Then } from "@cucumber/cucumber";
 import { users } from "../../config/test-data.js";
 import { logger } from "../../helpers/logger.js";
+import { assertLoginResult } from "../../helpers/assertions/login.assertions.js";
 
-Given("I navigate to SauceLab", async function () {
+Given("I am logged in as {string}", async function (userType) {
+    logger.info(`[${this.browserName}] Logging in as: ${userType}`);
+
+    const user = users[userType];
+
+    if (!user) {
+        throw new Error(`User type "${userType}" not found`);
+    }
+
     logger.info(`[${this.browserName}] Navigating to SauceLab application`);
     await this.loginPage.navigateToSauceLab();
+    await this.loginPage.login(user);
 });
 
-When("I enter {string} credentials", async function (userType) {
-    logger.info(`[${this.browserName}] Entering credentials for user type: ${userType}`);
+Then("I should see a {string} login outcome", async function (result) {
+    logger.info(`[${this.browserName}] Validating login outcome: ${result}`);
 
-    try {
-        const user = users[userType];
-
-        if (!user) {
-            throw new Error(`User type "${userType}" not defined in test data`);
-        }
-
-        await this.loginPage.writeUsername(user.username);
-        await this.loginPage.writePassword(user.password);
-    } catch (error) {
-        logger.error(`[${this.browserName}] Failed to enter credentials for "${userType}"`);
-
-        throw new Error(
-            `Failed to enter credentials for "${userType}". ${error.message}`
-        );
-    }
-});
-
-Then("I click the login button", async function () {
-    logger.info(`[${this.browserName}] Clicking login button`);
-    await this.loginPage.clickLoginButton();
-});
-
-Then("the login result should be {string}", async function (result) {
-     logger.info(`[${this.browserName}] Validating login result: expected ${result}`);
-
-    if (result === "success") {
-        await this.loginPage.assertLoginSuccess();
-    } else {
-        await this.loginPage.assertLoginFailed();
-    }
+    await assertLoginResult(this.loginPage, result);
 });

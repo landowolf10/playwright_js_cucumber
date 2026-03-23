@@ -1,19 +1,41 @@
-import { Then } from "@cucumber/cucumber";
+import { Given, When, Then } from "@cucumber/cucumber";
 import { logger } from "../../helpers/logger.js";
 
-Then("finish cart validation", async function () {
-    logger.info(`[${this.browserName}] Starting cart validation`);
+Given("I have a product in the cart", async function () {
+    logger.info(`[${this.browserName}] Ensuring product exists in cart`);
 
-    logger.info(`[${this.browserName}] Navigating to cart`);
-    await this.dashboardPage.goToCart();
+    const product = await this.dashboardPage.getRandomProduct();
+    await this.dashboardPage.addProductToCart(product);
 
-    logger.info(`[${this.browserName}] Verifying cart buttons are enabled`);
-    await this.cartPage.assertButtonsAreEnabled();
-
-    logger.info(`[${this.browserName}] Clicking remove button`);
-    await this.cartPage.clickRemoveButton();
-
-    logger.info(`[${this.browserName}] Verifying product elements were removed from cart`);
-    await this.cartPage.verifyElementsRemoved();
+    this.selectedProduct = product;
 });
 
+Then("the cart should contain {int} item", async function (expectedCount) {
+    logger.info(`[${this.browserName}] Validating cart contains ${expectedCount} item`);
+
+    await this.dashboardPage.goToCart(); // navegación implícita dentro del step
+
+    const count = await this.cartPage.getCartItemsCount();
+
+    if (count !== expectedCount) {
+        throw new Error(`Expected ${expectedCount} item, but found ${count}`);
+    }
+});
+
+When("I remove the product from the cart", async function () {
+    logger.info(`[${this.browserName}] Removing product from cart`);
+
+    await this.dashboardPage.goToCart();
+
+    await this.cartPage.removeFirstItem();
+});
+
+Then("the cart should be empty", async function () {
+    logger.info(`[${this.browserName}] Validating cart is empty`);
+
+    const count = await this.cartPage.getCartItemsCount();
+
+    if (count !== 0) {
+        throw new Error(`Cart is not empty. Found ${count} item(s)`);
+    }
+});

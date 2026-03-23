@@ -4,3 +4,12 @@ export const TIMEOUTS = {
   medium: 7000,
   long: 15000,
 };
+
+export const ERROR_MESSAGES = {
+  lockedLogin: "Epic sadface: Sorry, this user has been locked out."
+};
+
+export const ASSERTION_NAMES = {
+  assertVisible: "Error message should be visible",
+  assertTextMatch: "Error message should match expected",
+};

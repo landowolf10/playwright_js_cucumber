@@ -14,6 +14,25 @@ export class DashboardPage extends BasePage {
     this.dashboardLocators = new DashboardLocators();
   }
 
+  async getProductData(item) {
+    const name = await this.getElementText(
+      item.locator(this.dashboardLocators.productName)
+    );
+
+    const priceText = await this.getElementText(
+      item.locator(this.dashboardLocators.productPrice)
+    );
+
+    return {
+      name: name.trim(),
+      price: this.parsePrice(priceText)
+    };
+  }
+
+  parsePrice(priceText) {
+    return parseFloat(priceText.replace("$", "").trim());
+  }
+
   /**
    * Retrieves all products displayed on the dashboard.
    *
@@ -30,22 +49,7 @@ export class DashboardPage extends BasePage {
       logger.info(`Found ${items.length} products on the page`);
 
       for (const item of items) {
-        const name = await this.getElementText(
-          item.locator(this.dashboardLocators.productName)
-        );
-
-        const priceText = await this.getElementText(
-          item.locator(this.dashboardLocators.productPrice)
-        );
-
-        const price = parseFloat(priceText.replace("$", "").trim());
-
-        products.push({
-          name: name.trim(),
-          price: price
-        });
-
-        logger.info(`Product found -> Name: ${name.trim()}, Price: $${price}`);
+        products.push(await this.getProductData(item));
       }
 
       logger.info("Finished retrieving product list");
@@ -64,7 +68,7 @@ export class DashboardPage extends BasePage {
    * @returns {Promise<{name: string, price: number, button: import('@playwright/test').Locator}>}
    * Object containing the selected product name, price and its button locator
    */
-  async addRandomProductToCart() {
+  async getRandomProduct() {
     try {
       const items = await this.getAllElements(this.dashboardLocators.allProducts);
 
@@ -75,33 +79,21 @@ export class DashboardPage extends BasePage {
       const randomIndex = Math.floor(Math.random() * items.length);
       const item = items[randomIndex];
 
-      const name = await this.getElementText(
-        item.locator(this.dashboardLocators.productName)
-      );
-
-      const priceText = await this.getElementText(
-        item.locator(this.dashboardLocators.productPrice)
-      );
-
-      const button = item.locator(this.dashboardLocators.addToCartButton);
-
-      const price = parseFloat(priceText.replace("$", "").trim());
-
-      logger.info(`Selected product -> Name: ${name}, Price: $${price}`);
-
-      await this.clickElement(button);
-
-      logger.info(`Product "${name}" added to the cart`);
+      const data = await this.getProductData(item);
 
       return {
-        name,
-        price,
-        button
+        ...data,
+        item
       };
     } catch (error) {
       logger.error(`Failed to add random product to cart: ${error.message}`);
       throw error;
     }
+  }
+
+  async addProductToCart(product) {
+    const button = product.item.locator(this.dashboardLocators.addToCartButton);
+    await this.clickElement(button);
   }
 
   /**

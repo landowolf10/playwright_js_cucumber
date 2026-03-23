@@ -1,10 +1,8 @@
 Feature: Login functionality
 
-  Scenario Outline: Login attempt
-    Given I navigate to SauceLab
-    When I enter "<userType>" credentials
-    And I click the login button
-    Then the login result should be "<result>"
+  Scenario Outline: User attempts to login
+    Given I am logged in as "<userType>"
+    Then I should see a "<result>" login outcome
 
     Examples:
       | userType  | result  |

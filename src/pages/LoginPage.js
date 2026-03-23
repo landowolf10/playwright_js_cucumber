@@ -2,7 +2,6 @@ import { LoginLocators } from "../locators/login_locators.js";
 import { DashboardLocators } from "../locators/dashboard_locators.js";
 import { BasePage } from "../helpers/BasePage.js";
 import { ENV } from "../config/env.config.js";
-import { assertVisible } from "../helpers/assertions.js";
 import { logger } from "../helpers/logger.js";
 
 /**
@@ -42,127 +41,12 @@ export class LoginPage extends BasePage {
     }
   }
 
-  /**
-   * Performs login using provided credentials.
-   *
-   * @param {string} userName - Username used for login
-   * @param {string} password - Password used for login
-   * @returns {Promise<void>}
-   */
-  async login(userName, password) {
-    logger.info(`Performing login with user: ${userName}`);
+  async login(user) {
+    logger.info(`Logging in with user: ${user.username}`);
 
-    try {
-      await this.writeText(this.loginLocators.userTextbox, userName);
-      await this.writeText(this.loginLocators.passwordTextbox, password);
-      await this.clickElement(this.loginLocators.loginButton);
-
-    } catch (error) {
-      logger.error(`Login process failed for user ${userName}: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Writes the username into the username input field.
-   *
-   * @param {string} userName - Username value
-   * @returns {Promise<void>}
-   */
-  async writeUsername(userName) {
-    logger.info(`Entering username: ${userName}`);
-
-    try {
-      await this.writeText(this.loginLocators.userTextbox, userName);
-      logger.info("Username entered successfully");
-
-    } catch (error) {
-      logger.error(`Failed to enter username: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Writes the password into the password input field.
-   *
-   * @param {string} password - Password value
-   * @returns {Promise<void>}
-   */
-  async writePassword(password) {
-    logger.info("Entering password");
-
-    try {
-      await this.writeText(this.loginLocators.passwordTextbox, password);
-      logger.info("Password entered successfully");
-
-    } catch (error) {
-      logger.error(`Failed to enter password: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Clicks the login button.
-   *
-   * @returns {Promise<void>}
-   */
-  async clickLoginButton() {
-    logger.info("Clicking login button");
-
-    try {
-      await this.clickElement(this.loginLocators.loginButton);
-      logger.info("Login button clicked");
-
-    } catch (error) {
-      logger.error(`Failed to click login button: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Validates that login was successful by verifying the dashboard cart icon.
-   *
-   * @returns {Promise<void>}
-   * @throws {Error} If the dashboard is not displayed
-   */
-  async assertLoginSuccess() {
-    logger.info("Validating successful login");
-
-    try {
-      await assertVisible(this.page, this.dashboardLocators.cartIcon, "Cart Icon");
-      logger.info("Login successful - dashboard loaded");
-    } catch (error) {
-      logger.error("Login success validation failed");
-      throw new Error(
-        `Login success verification failed. User was not redirected to the dashboard. ${error.message}`
-      );
-
-    }
-  }
-
-  /**
-   * Validates that login failed and checks the expected error message.
-   *
-   * @returns {Promise<void>}
-   * @throws {Error} If the error message is not the expected one
-   */
-  async assertLoginFailed() {
-    logger.info("Validating login failure");
-
-    const errorMessageText = await this.getErrorMessageText();
-
-    await assertVisible(this.page, this.loginLocators.loginButton, "Login button");
-    await assertVisible(this.page, this.loginLocators.errorMessage, "Error message");
-
-    logger.info(`Error message displayed: ${errorMessageText}`);
-
-    if (errorMessageText !== "Epic sadface: Sorry, this user has been locked out.") {
-      throw new Error(
-        `Unexpected error message.
-      Expected: "Epic sadface: Sorry, this user has been locked out."
-      Actual: "${errorMessageText}"`
-      );
-    }
+    await this.writeText(this.loginLocators.userTextbox, user.username);
+    await this.writeText(this.loginLocators.passwordTextbox, user.password);
+    await this.clickElement(this.loginLocators.loginButton);
   }
 
   /**

@@ -14,36 +14,12 @@ export class CartPage extends BasePage {
     this.cartLocators = new CartLocators(page);
   }
 
-  /**
-   * Validates that the cart elements are visible and action buttons are enabled.
-   *
-   * @returns {Promise<void>}
-   * @throws {Error} If any element is not visible or button is not enabled
-   */
-  async assertButtonsAreEnabled() {
-    logger.info("Validating cart elements visibility and button states");
+  async getCartItems() {
+    return await this.getAllElements(this.cartLocators.cartItems);
+  }
 
-
-    try {
-      await this.waitForVisible(this.cartLocators.itemDescription);
-      logger.info("Item description is visible");
-
-      await this.waitForVisible(this.cartLocators.quantity);
-      logger.info("Item quantity is visible");
-
-      await this.waitForEnabled(this.cartLocators.removeButton);
-      logger.info("Remove button is enabled");
-
-      await this.waitForEnabled(this.cartLocators.checkoutButton);
-      logger.info("Checkout button is enabled");
-
-      await this.waitForEnabled(this.cartLocators.continueButton);
-      logger.info("Continue shopping button is enabled");
-
-    } catch (error) {
-      logger.error(`Error validating cart buttons: ${error.message}`);
-      throw error;
-    }
+  async getCartItemsCount() {
+    return await this.page.locator(this.cartLocators.cartItems).count();
   }
 
   /**
@@ -51,17 +27,19 @@ export class CartPage extends BasePage {
    *
    * @returns {Promise<void>}
    */
-  async clickRemoveButton() {
-    logger.info("Clicking remove button to delete product from cart");
+  async removeFirstItem() {
+    const items = await this.getCartItems();
 
-    try {
-      await this.clickElement(this.cartLocators.removeButton);
-      logger.info("Product removed from cart");
-
-    } catch (error) {
-      logger.error(`Error clicking remove button: ${error.message}`);
-      throw error;
+    if (items.length === 0) {
+      throw new Error("No items in cart to remove");
     }
+
+    const firstItem = items[0];
+    const removeButton = firstItem.locator(this.cartLocators.removeButton);
+
+    await this.clickElement(removeButton);
+    await firstItem.waitFor({ state: "detached" });
+    logger.info("Product removed from cart");
   }
 
   /**
@@ -70,16 +48,9 @@ export class CartPage extends BasePage {
    * @returns {Promise<void>}
    * @throws {Error} If cart elements are still visible
    */
-  async verifyElementsRemoved() {
+  async isCartEmpty() {
     logger.info("Verifying that cart elements are removed");
-
-    try {
-      await this.waitForHidden(this.cartLocators.quantity);
-      logger.info("Product quantity element is no longer visible");
-
-    } catch (error) {
-      logger.error(`Cart element was not removed: ${error.message}`);
-      throw error;
-    }
+    const items = await this.getCartItems();
+    return items.length === 0;
   }
 }
